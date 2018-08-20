@@ -39,6 +39,7 @@ func FormatStatus(data []byte) (string, error) {
 	autoConfigStats := stats["autoConfigStats"]
 	checkSchedulerStats := stats["checkSchedulerStats"]
 	aggregatorStats := stats["aggregatorStats"]
+	dogstatsdStats := stats["dogstatsdStats"]
 	jmxStats := stats["JMXStatus"]
 	logsStats := stats["logsStats"]
 	dcaStats := stats["clusterAgentStatus"]
@@ -50,7 +51,7 @@ func FormatStatus(data []byte) (string, error) {
 	renderForwarderStatus(b, forwarderStats)
 	renderLogsStatus(b, logsStats)
 	renderAggregatorStatus(b, aggregatorStats)
-	// renderDogstatsdStatus(b, aggregatorStats)
+	renderDogstatsdStatus(b, dogstatsdStats)
 	if config.Datadog.GetBool("cluster_agent.enabled") {
 		renderDatadogClusterAgentStatus(b, dcaStats)
 	}
@@ -116,9 +117,9 @@ func renderAggregatorStatus(w io.Writer, aggregatorStats interface{}) {
 	}
 }
 
-func renderDogstatsdStatus(w io.Writer, aggregatorStats interface{}) {
+func renderDogstatsdStatus(w io.Writer, dogstatsdStats interface{}) {
 	t := template.Must(template.New("dogstatsd.tmpl").Funcs(fmap).ParseFiles(filepath.Join(templateFolder, "dogstatsd.tmpl")))
-	err := t.Execute(w, aggregatorStats)
+	err := t.Execute(w, dogstatsdStats)
 	if err != nil {
 		fmt.Println(err)
 	}
