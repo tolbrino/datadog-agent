@@ -44,12 +44,15 @@ func (c *Container) findSource(sources []*config.LogSource) *config.LogSource {
 		if source.Config.Image != "" && !c.isImageMatch(source.Config.Image) {
 			continue
 		}
+		log.Info("Image: %v", c.Image)
 		if source.Config.Label != "" && !c.isLabelMatch(source.Config.Label) {
 			continue
 		}
+		log.Info("Labels: %v", c.Labels)
 		if source.Config.Name != "" && !c.isNameMatch(source.Config.Name) {
 			continue
 		}
+		log.Info("Names: %v", c.Names)
 		if candidate == nil {
 			candidate = source
 		}

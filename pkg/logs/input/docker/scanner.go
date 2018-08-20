@@ -95,34 +95,42 @@ func (s *Scanner) run() {
 // tail, as well as stopped containers or containers that
 // restarted
 func (s *Scanner) scan(tailFromBeginning bool) {
+	log.Info("Listing containers")
 	runningContainers := s.listContainers()
 	containersToMonitor := make(map[string]bool)
 
 	// monitor new containers, and restart tailers if needed
 	for _, container := range runningContainers {
+		log.Info("Finding source for container: %v", container.ID)
 		source := NewContainer(container).findSource(s.sources.GetSourcesWithType(config.DockerType))
 		if source == nil {
+			log.Info("No source for container: %v", container.ID)
 			continue
 		}
 		tailer, isTailed := s.tailers[container.ID]
 		if isTailed && tailer.shouldStop {
+			log.Infof("Tailer stopped reading: %v", container.ID)
 			continue
 		}
 		if !isTailed {
 			// setup a new tailer
 			succeeded := s.setupTailer(s.cli, container, source, tailFromBeginning, s.pipelineProvider.NextPipelineChan())
 			if !succeeded {
+				log.Info("Tailer setup failed for container: %v", container.ID)
 				// the setup failed, let's try to tail this container in the next scan
 				continue
 			}
+			log.Infof("Tailer started: %v", container.ID)
 		}
 		containersToMonitor[container.ID] = true
 	}
 
 	// stop old containers
 	for containerID, tailer := range s.tailers {
+		log.Infof("Container in cache: %v", containerID)
 		_, shouldMonitor := containersToMonitor[containerID]
 		if !shouldMonitor {
+			log.Infof("Removing entry: %v", containerID)
 			s.dismissTailer(tailer)
 		}
 	}
