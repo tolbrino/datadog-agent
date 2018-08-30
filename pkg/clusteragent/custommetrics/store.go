@@ -230,6 +230,10 @@ func isExternalMetricValueKey(key string) bool {
 }
 
 func setStoreStats(store *configMapStore) {
+	if store.name != GetConfigmapName() {
+		return
+	}
+
 	bundle, err := store.doGetMetrics()
 	if err != nil {
 		return
