@@ -166,7 +166,7 @@ func (c *configMapStore) ListAllExternalMetricValues() ([]ExternalMetricValue, e
 	return bundle.External, nil
 }
 
-// GetMetrics returns a bundle of all the metrics in the store.
+// GetMetrics returns a bundle of all the metrics from the local copy of the configmap.
 func (c *configMapStore) GetMetrics() (*MetricsBundle, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
