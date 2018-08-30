@@ -16,8 +16,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/metrics"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/DataDog/datadog-agent/pkg/util/kubernetes/clustername"
 )
 
 type kubernetesEventBundle struct {
@@ -29,7 +27,7 @@ type kubernetesEventBundle struct {
 	timeStamp     float64        // Used for the new events in the bundle to specify when they first occurred
 	lastTimestamp float64        // Used for the modified events in the bundle to specify when they last occurred
 	countByAction map[string]int // Map of count per action to aggregate several events from the same ObjUid in one event
-	hostname      string         // Stores the hostname that should be used to submit the events
+	nodename      string         // Stores the nodename that should be used to submit the events
 }
 
 func newKubernetesEventBundler(objUid types.UID, compName string) *kubernetesEventBundle {
@@ -61,25 +59,27 @@ func (k *kubernetesEventBundle) addEvent(event *v1.Event) error {
 	k.readableKey = fmt.Sprintf("%s %s", event.InvolvedObject.Name, event.InvolvedObject.Kind)
 
 	if event.InvolvedObject.Kind == "Node" || event.InvolvedObject.Kind == "Pod" {
-		k.hostname = event.Source.Host
-		clusterName := clustername.GetClusterName()
-		if clusterName != "" {
-			k.hostname = k.hostname + "-" + clusterName
-		}
+		k.nodename = event.Source.Host
 	}
 
 	return nil
 }
 
-func (k *kubernetesEventBundle) formatEvents(modified bool) (metrics.Event, error) {
+func (k *kubernetesEventBundle) formatEvents(modified bool, clusterName string) (metrics.Event, error) {
 	if len(k.events) == 0 {
 		return metrics.Event{}, errors.New("no event to export")
 	}
-	// If k.hostname was not defined, the aggregator will then set the local hostname
+
+	// Adding the clusterName to the nodename if present
+	hostname := k.nodename
+	if k.nodename != "" && clusterName != "" {
+		hostname = hostname + "-" + clusterName
+	}
+	// If k.nodename was not defined, the aggregator will then set the local nodename
 	output := metrics.Event{
 		Title:          fmt.Sprintf("Events from the %s", k.readableKey),
 		Priority:       metrics.EventPriorityNormal,
-		Host:           k.hostname,
+		Host:           hostname,
 		SourceTypeName: "kubernetes",
 		EventType:      kubernetesAPIServerCheckName,
 		Ts:             int64(k.timeStamp),
