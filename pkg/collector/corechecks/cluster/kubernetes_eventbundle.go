@@ -75,7 +75,7 @@ func (k *kubernetesEventBundle) formatEvents(modified bool, clusterName string) 
 	if k.nodename != "" && clusterName != "" {
 		hostname = hostname + "-" + clusterName
 	}
-	// If k.nodename was not defined, the aggregator will then set the local nodename
+	// If hostname was not defined, the aggregator will then set the local nodename
 	output := metrics.Event{
 		Title:          fmt.Sprintf("Events from the %s", k.readableKey),
 		Priority:       metrics.EventPriorityNormal,
