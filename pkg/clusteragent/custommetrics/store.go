@@ -50,6 +50,8 @@ type Store interface {
 	DeleteExternalMetricValues([]ExternalMetricValue) error
 
 	ListAllExternalMetricValues() ([]ExternalMetricValue, error)
+
+	GetMetrics() (*MetricsBundle, error)
 }
 
 // configMapStore provides persistent storage of custom and external metrics using a configmap.
@@ -125,26 +127,10 @@ func (c *configMapStore) SetExternalMetricValues(added []ExternalMetricValue) er
 		}
 		c.cm.Data[key] = string(toStore)
 	}
-	if err := c.updateConfigMap(); err != nil {
-		return err
-	}
-
-	total := int64(len(added))
-	externalTotal.Set(total)
-
-	valid := int64(0)
-	for _, metric := range added {
-		if metric.Valid {
-			valid += 1
-		}
-	}
-
-	externalValid.Set(valid)
-
-	return nil
+	return c.updateConfigMap()
 }
 
-// Delete deletes all metrics in the configmap that refer to any of the given object references.
+// DeleteExternalMetricValues deletes the external metrics from the store.
 func (c *configMapStore) DeleteExternalMetricValues(deleted []ExternalMetricValue) error {
 	if len(deleted) == 0 {
 		return nil
@@ -173,7 +159,23 @@ func (c *configMapStore) ListAllExternalMetricValues() ([]ExternalMetricValue, e
 	if err := c.getConfigMap(); err != nil {
 		return nil, err
 	}
-	var metrics []ExternalMetricValue
+	bundle, err := c.doGetMetrics()
+	if err != nil {
+		return nil, err
+	}
+	return bundle.External, nil
+}
+
+// GetMetrics returns a bundle of all the metrics in the store.
+func (c *configMapStore) GetMetrics() (*MetricsBundle, error) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.doGetMetrics()
+}
+
+func (c *configMapStore) doGetMetrics() (*MetricsBundle, error) {
+	bundle := &MetricsBundle{}
 	for k, v := range c.cm.Data {
 		if !isExternalMetricValueKey(k) {
 			continue
@@ -183,9 +185,9 @@ func (c *configMapStore) ListAllExternalMetricValues() ([]ExternalMetricValue, e
 			log.Debugf("Could not unmarshal the external metric for key %s: %v", k, err)
 			continue
 		}
-		metrics = append(metrics, m)
+		bundle.External = append(bundle.External, m)
 	}
-	return metrics, nil
+	return bundle, nil
 }
 
 func (c *configMapStore) getConfigMap() error {
@@ -205,6 +207,7 @@ func (c *configMapStore) updateConfigMap() error {
 		log.Infof("Could not update the configmap %s: %v", c.name, err)
 		return err
 	}
+	setStoreStats(c)
 	return nil
 }
 
@@ -224,4 +227,22 @@ func externalMetricValueKeyFunc(val ExternalMetricValue) string {
 
 func isExternalMetricValueKey(key string) bool {
 	return strings.HasPrefix(key, "external_metric")
+}
+
+func setStoreStats(store *configMapStore) {
+	bundle, err := store.doGetMetrics()
+	if err != nil {
+		return
+	}
+
+	total := int64(len(bundle.External))
+	externalTotal.Set(total)
+
+	valid := int64(0)
+	for _, metric := range bundle.External {
+		if metric.Valid {
+			valid += 1
+		}
+	}
+	externalValid.Set(valid)
 }
