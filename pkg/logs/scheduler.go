@@ -5,6 +5,8 @@
 
 package logs
 
+// I'd move this file to either `logs/config` or `logs/autodiscovery` to make it clear what it is about
+
 import (
 	"fmt"
 	"strings"
@@ -40,6 +42,8 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 		if !s.isLogConfig(config) {
 			continue
 		}
+		// we need more comments here around how exactly we're using AD as a blackbox
+		// EG: we got a new yaml config file specifying to tail /path/to/file.log
 		if config.Provider != "" {
 			// new configuration
 			if config.Name != "" {
@@ -55,6 +59,7 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 			}
 		} else {
 			// new service
+			// eg new docker container
 			log.Infof("Received a new service: %v", config.Entity)
 			service, err := s.toService(config)
 			if err != nil {
@@ -67,6 +72,7 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 }
 
 // Unschedule removes services that have been stopped.
+// specify that there is no reason for now to unschedule config files
 func (s *Scheduler) Unschedule(configs []integration.Config) {
 	for _, config := range configs {
 		if !s.isLogConfig(config) {
@@ -172,5 +178,6 @@ var integrationToServiceCRTime = map[integrationConfig.CreationTime]service.Crea
 
 // getCreationTime returns the service creation time for the integration configuration.
 func (s *Scheduler) getCreationTime(integrationConfig integration.Config) service.CreationTime {
+	// do we need this map or could we use directly the service.Before?
 	return integrationToServiceCRTime[integrationConfig.CreationTime]
 }

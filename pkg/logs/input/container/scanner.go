@@ -25,6 +25,8 @@ func NewScanner(sources *config.LogSources, services *service.Services, pipeline
 		// attempt to initialize a docker scanner
 		launcher, err := docker.NewLauncher(sources, services, pipelineProvider, registry)
 		if err == nil {
+			// why do we have this new variable withotu logs_config?
+			// I get it but it is confusing
 			source := config.NewLogSource("container_collect_all", &config.LogsConfig{
 				Type:    config.DockerType,
 				Service: "docker",
@@ -47,5 +49,7 @@ func NewScanner(sources *config.LogSources, services *service.Services, pipeline
 		log.Warnf("Could not setup the docker scanner: %v", err)
 		return nil, err
 	}
+	// this means that we attempt to start kubernetes only when container_collect_all,
+	// which is worth a fixme at least.
 	return launcher, nil
 }

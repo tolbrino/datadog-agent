@@ -16,6 +16,7 @@ const capacity = 10
 type Services struct {
 	addedPerType   map[string]chan *Service
 	removedPerType map[string]chan *Service
+	// what's the difference between this and the config.sources
 	mu             sync.Mutex
 }
 

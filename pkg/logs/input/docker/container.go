@@ -37,6 +37,7 @@ func NewContainer(container types.Container, service *service.Service) *Containe
 const configPath = "com.datadoghq.ad.logs"
 
 // ContainsLabel returns true if the container contains an autodiscovery label.
+// unused?
 func (c *Container) ContainsLabel() bool {
 	_, exists := c.container.Labels[configPath]
 	return exists
@@ -56,6 +57,7 @@ func (c *Container) FindSource(sources []*config.LogSource) *config.LogSource {
 		if candidate == nil {
 			candidate = source
 		}
+		// should it be >?
 		if c.computeScore(candidate) < c.computeScore(source) {
 			candidate = source
 		}
