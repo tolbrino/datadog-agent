@@ -82,6 +82,22 @@ func TestSubprocessRun(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestSubprocessRun(t *testing.T) {
+
+	instances = make([]*PythonCheck, 20)
+	for i := range instances {
+		check, _ := getCheckInstance("testsubprocess", "TestSubprocessCheck")
+		instances[i] = check
+	}
+
+	for _, check := range instances {
+		go func() {
+			err := check.Run()
+			assert.Nil(t, err)
+		}()
+	}
+}
+
 func TestWarning(t *testing.T) {
 	check, _ := getCheckInstance("testwarnings", "TestCheck")
 	err := check.Run()
